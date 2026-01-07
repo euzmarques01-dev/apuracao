@@ -209,3 +209,78 @@ function atualizarGeral(){
       b+=dados[e].branco||0;
       n+=dados[e].nulo||0;
     }
+  });
+  document.getElementById('barraGeral').style.width=(s/estadosLista.length)+"%";
+  document.getElementById('pctGeral').textContent=(s/estadosLista.length).toFixed(1)+"%";
+  document.getElementById('brancoGeral').textContent=b;
+  document.getElementById('nuloGeral').textContent=n;
+}
+
+// ABRIR ESTADO
+window.abrirEstado=function(uf){
+  estadoAtual=uf;
+  tituloCargo.textContent=cargoAtual+" – "+uf;
+  fecharEstadoArea.innerHTML=`<button class="btn-fechar-estado" onclick="fecharEstado()">Fechar ${uf}</button>`;
+  render();
+};
+window.fecharEstado=function(){
+  estadoAtual="BR";
+  tituloCargo.textContent=cargoAtual+" – Nacional";
+  fecharEstadoArea.innerHTML="";
+  render();
+};
+
+// RENDERIZAÇÃO COM ORDEM POR VOTOS
+function render(){
+  listaCandidatos.innerHTML="";
+  for(let cargo in candidatos){
+    const lista = candidatos[cargo][estadoAtual]||{};
+    // Ordena pelo votosAtual decrescente
+    const sorted = Object.entries(lista).sort((a,b)=>{
+      return ((b[1].votosAtual||0)/(b[1].votos||1)) - ((a[1].votosAtual||0)/(a[1].votos||1));
+    });
+    sorted.forEach(([key,c])=>{
+      const pct = c.votosAtual && c.votos ? ((c.votosAtual/c.votos)*100).toFixed(1) : 0;
+      listaCandidatos.innerHTML+=`
+      <div class="candidato ${c.status==='ELEITO'?'eleito':''}">
+        ${c.foto? `<img src="${c.foto}" alt="Foto">` : ''}
+        <div style="flex:1">
+          <strong>${c.nome}</strong> (${c.partido}) ${c.status}<br>
+          Votos: ${c.votosAtual}/${c.votos} | ${pct}%
+          <div class="barra"><span style="width:${pct}%"></span></div>
+          ${fundador?`
+          <button status="ELEITO" onclick="marcarStatus('${cargo}','${estadoAtual}','${key}','ELEITO')">Eleito</button>
+          <button status="2TURNO" onclick="marcarStatus('${cargo}','${estadoAtual}','${key}','2TURNO')">2º Turno</button>
+          <button class="excluir" onclick="excluirCandidato('${cargo}','${estadoAtual}','${key}')">Excluir</button>
+          <button onclick="adicionarVotos('${cargo}','${estadoAtual}','${key}')">Adicionar Votos</button>
+          `:""}
+        </div>
+      </div>`;
+    });
+  }
+}
+
+window.marcarStatus=function(cargo,estado,key,status){
+  update(ref(db,'candidatos/'+cargo+'/'+estado+'/'+key),{status});
+}
+window.excluirCandidato=function(cargo,estado,key){
+  if(confirm("Deseja excluir este candidato?")){
+    set(ref(db,'candidatos/'+cargo+'/'+estado+'/'+key),null);
+  }
+}
+window.adicionarVotos=function(cargo,estado,key){
+  const votos=parseInt(prompt("Quantos votos adicionar?"));
+  if(!isNaN(votos)){
+    const candidatoRef=ref(db,'candidatos/'+cargo+'/'+estado+'/'+key);
+    get(candidatoRef).then(snap=>{
+      const c=snap.val();
+      if(c){
+        update(candidatoRef,{votosAtual:(c.votosAtual||0)+votos});
+      }
+    });
+  }
+}
+</script>
+
+</body>
+</html>
