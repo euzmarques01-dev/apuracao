@@ -2,176 +2,81 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel Eleitoral – TSE</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-
+<title>TSE – Painel Eleitoral</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-:root{
-  --azul:#0b5ed7;
-  --verde:#00c853;
-  --amarelo:#ffd600;
-  --vermelho:#d50000;
-}
-*{box-sizing:border-box;font-family:Roboto;margin:0;padding:0}
-body{background:#f4f6f8}
-header{
-  background:var(--azul);
-  color:#fff;
-  padding:12px 16px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-header button{
-  background:#fff;
-  border:none;
-  padding:4px 10px;
-  border-radius:20px;
-  font-weight:700;
-  font-size:12px;
-  cursor:pointer;
-}
-main{padding:16px}
-.card{
-  background:#fff;
-  border-radius:14px;
-  padding:16px;
-  margin-bottom:16px;
-  box-shadow:0 6px 16px rgba(0,0,0,.08);
-}
-.barra{
-  height:18px;
-  background:#ddd;
-  border-radius:20px;
-  overflow:hidden;
-  margin:6px 0;
-}
-.barra span{
-  display:block;
-  height:100%;
-  background:linear-gradient(90deg,#0b5ed7,#3d8bfd);
-}
-.estados{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(110px,1fr));
-  gap:10px;
-}
-.estado{
-  background:#dee2e6;
-  border-radius:12px;
-  padding:8px;
-  text-align:center;
-  font-weight:700;
-  cursor:pointer;
-}
-.estado-info{
-  font-size:11px;
-  margin-top:6px;
-  font-weight:500;
-}
-.candidato{margin-bottom:12px}
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.6);
-  display:none;
-  justify-content:center;
-  align-items:center;
-  z-index:999;
-}
-.modal .box{
-  background:#fff;
-  width:460px;
-  max-height:90vh;
-  overflow:auto;
-  border-radius:14px;
-  padding:16px;
-}
-input,select,button{width:100%;padding:8px;margin-bottom:8px}
-.btn-fechar-estado{
-  background:var(--vermelho);
-  color:#fff;
-  border:none;
-  padding:6px;
-  border-radius:8px;
-  font-weight:700;
-}
-.eleito{animation:pisca 1s infinite}
-@keyframes pisca{
-  0%{color:#000}
-  50%{color:#00c853}
-  100%{color:#000}
-}
+body{margin:0;font-family:Arial;background:#f4f6f8}
+header{background:#0b5ed7;color:#fff;padding:12px}
+button{cursor:pointer}
+.card{background:#fff;margin:16px;padding:16px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.barra{height:16px;background:#ddd;border-radius:10px;overflow:hidden}
+.barra span{display:block;height:100%;background:#0b5ed7}
+.estados{display:grid;grid-template-columns:repeat(auto-fill,90px);gap:10px}
+.estado{background:#dee2e6;padding:8px;border-radius:10px;text-align:center;font-weight:bold;cursor:pointer}
+.candidato{margin:8px 0}
+.eleito{color:#00c853;font-weight:bold}
+.segundo{color:#ff9800;font-weight:bold}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center}
+.box{background:#fff;padding:16px;border-radius:12px;width:420px;max-height:90vh;overflow:auto}
+input,select{width:100%;margin:6px 0;padding:6px}
 </style>
 </head>
 
 <body>
 
 <header>
-  <strong>TSE – NAÇÃO BRASILEIRA</strong>
-  <button onclick="login()">Painel Fundador</button>
+  <strong>TSE – RESULTADOS</strong>
+  <button onclick="login()" style="float:right">Fundador</button>
 </header>
-
-<main>
 
 <div class="card">
   <h2>Apuração Nacional – Presidente</h2>
-  <div class="barra"><span id="barraGeral"></span></div>
-  <p>Urnas: <strong id="pctGeral">0%</strong></p>
-  <p>Brancos: <span id="brancoGeral">0</span> | Nulos: <span id="nuloGeral">0</span></p>
+  <div class="barra"><span id="barraBrasil"></span></div>
+  <p>Urnas: <span id="pctBrasil">0%</span></p>
+  <p>Brancos: <span id="brancoBrasil">0</span> | Nulos: <span id="nuloBrasil">0</span></p>
+  <div id="listaPresidente"></div>
 </div>
 
 <div class="card">
-  <div id="fecharEstadoArea"></div>
-  <h2 id="tituloCargo">Presidente – Nacional</h2>
-  <div id="listaCandidatos"></div>
-</div>
-
-<div class="card">
-  <h2>Estados + Exterior</h2>
+  <h3>Estados</h3>
   <div class="estados" id="estados"></div>
 </div>
 
-</main>
-
 <div class="modal" id="painel">
-  <div class="box">
-    <h3>Painel do Fundador</h3>
+<div class="box">
+<h3>Painel do Fundador</h3>
 
-    <select id="estadoSel"></select>
-    <input type="range" min="0" max="100" id="pctUrna">
-    <small>Urnas: <span id="pctLabel">0%</span></small>
+<select id="estadoSel"></select>
 
-    <input type="number" id="pctBranco" placeholder="Brancos">
-    <input type="number" id="pctNulo" placeholder="Nulos">
-    <input type="color" id="corEstado">
+<label>Urnas (%)</label>
+<input type="range" min="0" max="100" id="pctUrna">
 
-    <button onclick="aplicarEstado()">Aplicar Estado</button>
-    <hr>
+<input type="number" id="branco" placeholder="Brancos">
+<input type="number" id="nulo" placeholder="Nulos">
 
-    <select id="cargoSel">
-      <option>Presidente</option>
-      <option>Governador</option>
-      <option>Senador</option>
-      <option>Deputado</option>
-      <option>Prefeito</option>
-      <option>Vereador</option>
-    </select>
+<button onclick="aplicarEstado()">Aplicar Estado</button>
+<hr>
 
-    <input id="nome" placeholder="Nome">
-    <input id="partido" placeholder="Partido">
-    <input type="number" id="totalVotos" placeholder="Total de votos">
+<select id="cargo">
+<option>Presidente</option>
+<option>Governador</option>
+<option>Senador</option>
+<option>Deputado</option>
+</select>
 
-    <button onclick="addCandidato()">Adicionar Candidato</button>
-    <button onclick="painel.style.display='none'">Fechar</button>
-  </div>
+<input id="nome" placeholder="Nome do candidato">
+<input id="partido" placeholder="Partido">
+<input type="number" id="votos" placeholder="Total de votos">
+
+<button onclick="addCandidato()">Adicionar Candidato</button>
+<button onclick="fechar()">Fechar</button>
+</div>
 </div>
 
 <script type="module">
+/* 🔥 FIREBASE */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAE-c6y2Z1JsQplCfj1UNW7Wyr4ssCsJQU",
@@ -180,122 +85,81 @@ const firebaseConfig = {
   projectId: "tse-painel",
   storageBucket: "tse-painel.firebasestorage.app",
   messagingSenderId: "818733405394",
-  appId: "1:818733405394:web:8e3e3e45062e3122e9490b",
-  measurementId: "G-49XLVVE7D5"
+  appId: "1:818733405394:web:8e3e3e45062e3122e9490b"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const estadosLista=["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO","EXTERIOR"];
+/* 🧠 DADOS */
+const UFs=["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
+let fundador=false, estadoAtual=null;
 
-let estadoAtual="BR";
-let cargoAtual="Presidente";
-let dados={}, candidatos={};
+let dados={
+  estados:{},
+  presidente:[]
+};
 
+UFs.forEach(uf=>{
+  dados.estados[uf]={pct:0,branco:0,nulo:0,cargos:{Governador:[],Senador:[],Deputado:[]}};
+});
+
+/* 📡 CARREGA AUTOMÁTICO */
+onValue(ref(db,"eleicao"),snap=>{
+  if(snap.exists()){
+    dados=snap.val();
+    render();
+  }
+});
+
+/* 💾 SALVAR */
+function salvar(){ set(ref(db,"eleicao"),dados); }
+
+/* UI */
 const estadosDiv=document.getElementById("estados");
 const estadoSel=document.getElementById("estadoSel");
-const pctUrna=document.getElementById("pctUrna");
-const pctLabel=document.getElementById("pctLabel");
-
-estadosLista.forEach(uf=>{
-  estadosDiv.innerHTML+=`
-    <div class="estado" id="${uf}">
-      ${uf}
-      <div class="estado-info"></div>
-    </div>`;
+UFs.forEach(uf=>{
+  estadosDiv.innerHTML+=`<div class="estado" onclick="abrirEstado('${uf}')">${uf}<br><small>0%</small></div>`;
   estadoSel.innerHTML+=`<option>${uf}</option>`;
 });
 
-document.querySelectorAll(".estado").forEach(el=>{
-  el.addEventListener("click",()=>{
-    estadoAtual=el.id;
-    render();
-  });
-});
-
-onValue(ref(db,"dados"),snap=>{
-  dados=snap.val()||{};
-  atualizarGeral();
-});
-
-onValue(ref(db,"candidatos"),snap=>{
-  candidatos=snap.val()||{};
-  render();
-});
-
-window.login=()=>prompt("Senha do fundador")==="2007"&&(painel.style.display="flex");
-
-pctUrna.oninput=()=>pctLabel.textContent=pctUrna.value+"%";
+window.login=()=>{ if(prompt("Senha")==="2007"){fundador=true;alert("Modo fundador ativo");} }
+window.fechar=()=>painel.style.display="none";
+window.abrirEstado=uf=>{ if(!fundador)return; estadoAtual=uf; painel.style.display="flex"; };
 
 window.aplicarEstado=()=>{
-  const e=estadoSel.value;
-  set(ref(db,"dados/"+e),{
-    pct:+pctUrna.value,
-    branco:+pctBranco.value||0,
-    nulo:+pctNulo.value||0,
-    cor:corEstado.value
-  });
+  const e=dados.estados[estadoAtual];
+  e.pct=+pctUrna.value;
+  e.branco=+branco.value||0;
+  e.nulo=+nulo.value||0;
+  salvar();
 };
-
-function atualizarGeral(){
-  let s=0,b=0,n=0;
-  estadosLista.forEach(e=>{
-    if(dados[e]){
-      s+=dados[e].pct||0;
-      b+=dados[e].branco||0;
-      n+=dados[e].nulo||0;
-    }
-  });
-  const pct=s/estadosLista.length;
-  barraGeral.style.width=pct+"%";
-  pctGeral.textContent=pct.toFixed(1)+"%";
-  brancoGeral.textContent=b;
-  nuloGeral.textContent=n;
-}
 
 window.addCandidato=()=>{
-  const cargo=cargoSel.value;
-  const estado=cargo==="Presidente"?"BR":estadoSel.value;
-  push(ref(db,"candidatos/"+cargo+"/"+estado),{
-    nome:nome.value,
-    partido:partido.value,
-    votosFinal:+totalVotos.value,
-    votosAtual:0,
-    pct:0,
-    status:""
-  });
-  nome.value=partido.value=totalVotos.value="";
+  const obj={nome:nome.value,partido:partido.value,votos:+votos.value,votosAtual:0,status:""};
+  if(cargo.value==="Presidente") dados.presidente.push(obj);
+  else dados.estados[estadoSel.value].cargos[cargo.value].push(obj);
+  salvar();
 };
 
-window.fecharEstado=()=>{estadoAtual="BR";render();};
-
 function render(){
-  listaCandidatos.innerHTML="";
-  fecharEstadoArea.innerHTML=estadoAtual!=="BR"
-    ? `<button class="btn-fechar-estado" onclick="fecharEstado()">Fechar ${estadoAtual}</button>`:"";
-
-  tituloCargo.textContent=cargoAtual+" – "+(estadoAtual==="BR"?"Nacional":estadoAtual);
-
-  const lista=candidatos[cargoAtual]?.[estadoAtual]||{};
-  Object.values(lista).forEach(c=>{
-    listaCandidatos.innerHTML+=`
-      <div class="candidato">
-        <strong>${c.nome}</strong> (${c.partido})
-        <div class="barra"><span style="width:${c.pct||0}%"></span></div>
-      </div>`;
+  let soma=0,b=0,n=0;
+  UFs.forEach((uf,i)=>{
+    soma+=dados.estados[uf].pct;
+    b+=dados.estados[uf].branco;
+    n+=dados.estados[uf].nulo;
+    estadosDiv.children[i].querySelector("small").textContent=dados.estados[uf].pct+"%";
   });
+  barraBrasil.style.width=(soma/UFs.length)+"%";
+  pctBrasil.textContent=(soma/UFs.length).toFixed(1)+"%";
+  brancoBrasil.textContent=b;
+  nuloBrasil.textContent=n;
 
-  estadosLista.forEach(uf=>{
-    const info=document.querySelector(`#${uf} .estado-info`);
-    info.innerHTML="";
-    const listaUF=candidatos[cargoAtual]?.[uf];
-    if(!listaUF) return;
-    const lider=Object.values(listaUF).sort((a,b)=>b.votosFinal-a.votosFinal)[0];
-    if(lider) info.innerHTML=`${lider.nome} (${lider.partido})`;
+  listaPresidente.innerHTML="";
+  dados.presidente.forEach(p=>{
+    listaPresidente.innerHTML+=`<div class="candidato"><strong>${p.nome}</strong> (${p.partido})</div>`;
   });
 }
 </script>
-
 </body>
 </html>
