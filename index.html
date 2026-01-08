@@ -37,7 +37,7 @@ input,select,button{width:100%;padding:8px;margin-bottom:8px}
 
 <header>
 <strong>TSE – ELEIÇÕES MUNICIPAIS</strong>
-<button onclick="login()">NAÇÃO BRASILEIRA</button>
+<button onclick="login()">PAINEL DO FUNDADOR</button>
 </header>
 
 <main>
@@ -65,11 +65,12 @@ input,select,button{width:100%;padding:8px;margin-bottom:8px}
 
 <div class="modal" id="painel">
 <div class="box">
-<h3>Painel do Fundador</h3>
+<h3>NAÇÃO BRASILEIRA</h3>
 
 <input type="range" min="0" max="100" id="pctUrna">
 <small>Urnas: <span id="pctLabel">0%</span></small>
 
+<input type="color" id="corCidade">
 <input type="number" id="brancos" placeholder="Votos em branco">
 <input type="number" id="nulos" placeholder="Votos nulos">
 
@@ -96,12 +97,12 @@ input,select,button{width:100%;padding:8px;margin-bottom:8px}
 </div>
 </div>
 
-<!-- FIREBASE -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<!-- FIREBASE MODULAR -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-<script>
-firebase.initializeApp({
+const firebaseConfig = {
   apiKey: "AIzaSyAE-c6y2Z1JsQplCfj1UNW7Wyr4ssCsJQU",
   authDomain: "tse-painel.firebaseapp.com",
   databaseURL: "https://tse-painel-default-rtdb.firebaseio.com",
@@ -109,9 +110,18 @@ firebase.initializeApp({
   storageBucket: "tse-painel.firebasestorage.app",
   messagingSenderId: "818733405394",
   appId: "1:818733405394:web:8e3e3e45062e3122e9490b"
-});
-const db=firebase.database();
+};
 
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+window.db=db;
+window.ref=ref;
+window.update=update;
+window.onValue=onValue;
+</script>
+
+<script>
 const capitaisLista={
 AC:"Rio Branco",AL:"Maceió",AP:"Macapá",AM:"Manaus",BA:"Salvador",
 CE:"Fortaleza",DF:"Brasília",ES:"Vitória",GO:"Goiânia",MA:"São Luís",
@@ -123,117 +133,122 @@ RR:"Boa Vista",SC:"Florianópolis",SP:"São Paulo",SE:"Aracaju",TO:"Palmas"
 
 let cidadeAtual=null;
 let dados={},prefeito={},vereadores={};
-
 const f=n=>Number(n||0).toLocaleString("pt-BR");
 
 Object.keys(capitaisLista).forEach(uf=>{
-  dados[uf]={pct:0,brancos:0,nulos:0};
-  prefeito[uf]=[];
-  vereadores[uf]=[];
-  capitais.innerHTML+=`<div class="capital" onclick="abrir('${uf}')">${capitaisLista[uf]}<br><small>${uf}</small></div>`;
+dados[uf]={pct:0,brancos:0,nulos:0,cor:"#dee2e6"};
+prefeito[uf]=[];
+vereadores[uf]=[];
+capitais.innerHTML+=`<div class="capital" id="c_${uf}" onclick="abrir('${uf}')">
+${capitaisLista[uf]}<br><small>${uf}</small></div>`;
 });
 
 function login(){if(prompt("Senha do fundador")==="2007") painel.style.display="flex";}
 function fechar(){painel.style.display="none";}
 
 function abrir(uf){
-  cidadeAtual=uf;
-  tituloCidade.textContent=capitaisLista[uf]+" / "+uf;
-
-  db.ref("municipios/"+uf).on("value",s=>{
-    if(!s.exists()) return;
-    const d=s.val();
-    dados[uf]=d;
-    prefeito[uf]=d.prefeito||[];
-    vereadores[uf]=d.vereadores||[];
-
-    barraUrna.style.width=d.pct+"%";
-    pctUrnaLabel.textContent=d.pct+"%";
-    pctUrna.value=d.pct||0;
-    brancosLabel.textContent=f(d.brancos);
-    nulosLabel.textContent=f(d.nulos);
-    brancos.value=d.brancos||0;
-    nulos.value=d.nulos||0;
-
-    render();
-  });
+cidadeAtual=uf;
+tituloCidade.textContent=capitaisLista[uf]+" / "+uf;
+onValue(ref(db,"municipios/"+uf),s=>{
+if(!s.exists()) return;
+const d=s.val();
+dados[uf]=d;
+prefeito[uf]=d.prefeito||[];
+vereadores[uf]=d.vereadores||[];
+barraUrna.style.width=d.pct+"%";
+pctUrnaLabel.textContent=d.pct+"%";
+pctUrna.value=d.pct||0;
+brancos.value=d.brancos||0;
+nulos.value=d.nulos||0;
+brancosLabel.textContent=f(d.brancos);
+nulosLabel.textContent=f(d.nulos);
+document.getElementById("c_"+uf).style.background=d.cor||"#dee2e6";
+render();
+});
 }
 
+pctUrna.oninput=()=>{
+pctLabel.textContent=pctUrna.value+"%";
+barraUrna.style.width=pctUrna.value+"%";
+};
+
 function salvarMunicipio(){
-  db.ref("municipios/"+cidadeAtual).update({
-    pct:+pctUrna.value,
-    brancos:+brancos.value||0,
-    nulos:+nulos.value||0,
-    prefeito:prefeito[cidadeAtual],
-    vereadores:vereadores[cidadeAtual]
-  });
+update(ref(db,"municipios/"+cidadeAtual),{
+pct:+pctUrna.value,
+brancos:+brancos.value||0,
+nulos:+nulos.value||0,
+cor:corCidade.value,
+prefeito:prefeito[cidadeAtual],
+vereadores:vereadores[cidadeAtual]
+});
+document.getElementById("c_"+cidadeAtual).style.background=corCidade.value;
 }
 
 function addCandidato(){
-  const r=new FileReader();
-  r.onload=e=>{
-    const c={nome:nome.value,partido:partido.value,votos:+votos.value,pct:0,status:"",foto:e.target.result};
-    (tipo.value==="prefeito"?prefeito:vereadores)[cidadeAtual].push(c);
-    calcular();
-  };
-  r.readAsDataURL(foto.files[0]);
+const r=new FileReader();
+r.onload=e=>{
+const c={nome:nome.value,partido:partido.value,votos:+votos.value,pct:0,status:"",foto:e.target.result};
+(tipo.value==="prefeito"?prefeito:vereadores)[cidadeAtual].push(c);
+calcular();
+};
+r.readAsDataURL(foto.files[0]);
 }
 
 function calcular(){
-  function calc(l){
-    const t=l.reduce((s,c)=>s+c.votos,0)||1;
-    l.forEach(c=>c.pct=((c.votos/t)*100).toFixed(2));
-  }
-  calc(prefeito[cidadeAtual]);
-  calc(vereadores[cidadeAtual]);
-  salvarMunicipio();
+const calc=l=>{
+const t=l.reduce((s,c)=>s+c.votos,0)||1;
+l.forEach(c=>c.pct=((c.votos/t)*100).toFixed(2));
+};
+calc(prefeito[cidadeAtual]);
+calc(vereadores[cidadeAtual]);
+salvarMunicipio();
 }
 
 function setStatus(t,i,s){
-  const l=t==="prefeito"?prefeito[cidadeAtual]:vereadores[cidadeAtual];
-  l[i].status=l[i].status===s?"":s;
-  salvarMunicipio();
+const l=t==="prefeito"?prefeito[cidadeAtual]:vereadores[cidadeAtual];
+l[i].status=l[i].status===s?"":s;
+salvarMunicipio();
 }
 
 function excluir(t,i){
-  (t==="prefeito"?prefeito:vereadores)[cidadeAtual].splice(i,1);
-  calcular();
+(t==="prefeito"?prefeito:vereadores)[cidadeAtual].splice(i,1);
+calcular();
 }
 
 function render(){
-  listaPrefeito.innerHTML="";
-  listaVereador.innerHTML="";
-  adminLista.innerHTML="";
-
-  prefeito[cidadeAtual]?.forEach((c,i)=>{
-    listaPrefeito.innerHTML+=card(c);
-    adminLista.innerHTML+=admin(c,"prefeito",i);
-  });
-  vereadores[cidadeAtual]?.forEach((c,i)=>{
-    listaVereador.innerHTML+=card(c);
-    adminLista.innerHTML+=admin(c,"vereador",i);
-  });
+listaPrefeito.innerHTML="";
+listaVereador.innerHTML="";
+adminLista.innerHTML="";
+prefeito[cidadeAtual]?.forEach((c,i)=>{
+listaPrefeito.innerHTML+=card(c);
+adminLista.innerHTML+=admin(c,"prefeito",i);
+});
+vereadores[cidadeAtual]?.forEach((c,i)=>{
+listaVereador.innerHTML+=card(c);
+adminLista.innerHTML+=admin(c,"vereador",i);
+});
 }
 
 function card(c){
-  return `<div class="candidato">
-  <img src="${c.foto}">
-  <div><strong>${c.nome}</strong> (${c.partido})
-  ${c.status==="ELEITO"?'<span class="status eleito">ELEITO</span>':""}
-  ${c.status==="2T"?'<span class="status segundo">2º TURNO</span>':""}
-  <div class="barra"><span style="width:${c.pct}%"></span></div>
-  <span class="percentual">${c.pct}%</span> — ${f(c.votos)} votos
-  </div></div>`;
+return `<div class="candidato">
+<img src="${c.foto}">
+<div><strong>${c.nome}</strong> (${c.partido})
+${c.status==="ELEITO"?'<span class="status eleito">ELEITO</span>':""}
+${c.status==="2T"?'<span class="status segundo">2º TURNO</span>':""}
+<div class="barra"><span style="width:${c.pct}%"></span></div>
+<span class="percentual">${c.pct}%</span> — ${f(c.votos)} votos
+</div></div>`;
 }
 
 function admin(c,t,i){
-  return `<div class="admin-candidato">
-  <strong>${c.nome}</strong>
-  <input type="number" value="${c.votos}" onchange="(${t}['${cidadeAtual}'][${i}].votos=parseInt(this.value||0),calcular())">
-  <button onclick="setStatus('${t}',${i},'ELEITO')">Eleito</button>
-  <button onclick="setStatus('${t}',${i},'2T')">2º Turno</button>
-  <button onclick="excluir('${t}',${i})">Excluir</button>
-  </div>`;
+return `<div class="admin-candidato">
+<strong>${c.nome}</strong>
+<input type="number" value="${c.votos}"
+onchange="(${t}['${cidadeAtual}'][${i}].votos=parseInt(this.value||0),calcular())">
+<button onclick="setStatus('${t}',${i},'ELEITO')">Eleito</button>
+<button onclick="setStatus('${t}',${i},'2T')">2º Turno</button>
+<button onclick="excluir('${t}',${i})">Excluir</button>
+</div>`;
 }
 </script>
 
